@@ -221,7 +221,7 @@ tfoot td:first-child{position:sticky;left:0;z-index:5;background:#fff;}
 .num{font-family:'DM Mono',monospace;font-variant-numeric:tabular-nums;color:var(--ink)}
 
 /* DIMENSION TOGGLE */
-.dim-toggle{display:flex;gap:6px;margin-bottom:16px}
+.dim-toggle{display:flex;gap:6px;margin-bottom:0}
 .dim-btn{font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid var(--rule2);background:transparent;color:var(--ink2);cursor:pointer;transition:all .15s}
 .dim-btn:hover{border-color:var(--accent);color:var(--accent)}
 .dim-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
@@ -339,7 +339,6 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
 
 <main>
 
-<!-- L1: EXECUTIVE KPI -->
 <div class="sec" style="margin-top:0"><span class="sec-n">L1: ROI OVERVIEW</span><div class="sec-r"></div></div>
 <div class="roi-hero">
   <div class="roi-hero-left">
@@ -372,10 +371,8 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
     </div>
   </div>
 </div>
-<!-- AI Insight Text Container -->
 <div id="roi-insight"></div>
 
-<!-- L2: OPERATIONAL DRIVERS -->
 <div class="sec"><span class="sec-n">L2: BUSINESS DRIVERS</span><div class="sec-r"></div></div>
 <div class="grid-3">
   <div class="kcard">
@@ -397,7 +394,7 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
 <div class="grid-4">
   <div class="kcard">
     <div class="kl" data-tip="Net sales after all discounts and returns">NET REVENUE (E)</div>
-    <div class="kv ac" id="k-net">—</div>
+    <div class="kv" style="color:var(--accent-m)" id="k-net">—</div>
     <div class="ks" id="k-net-s">After discounts &amp; returns</div>
     <div id="k-net-prog"></div>
   </div>
@@ -418,7 +415,6 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
   </div>
 </div>
 
-<!-- L2/L3: VISUAL FUNNEL -->
 <div class="sec"><span class="sec-n">VISUAL FUNNEL</span><div class="sec-r"></div></div>
 <div class="funnel-wrap">
   <div class="funnel-step">
@@ -443,7 +439,6 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
   </div>
 </div>
 
-<!-- L3: DIAGNOSTIC METRICS -->
 <div class="sec"><span class="sec-n">L3: DIAGNOSTIC METRICS</span><div class="sec-r"></div></div>
 <div class="grid-6">
   <div class="kcard">
@@ -473,12 +468,11 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
   </div>
   <div class="kcard">
     <div class="kl" data-tip="Meta vs Google ratio">CHANNEL SPLIT</div>
-    <div class="kv" id="k-split" style="font-size:24px">—</div>
+    <div class="kv" id="k-split" style="font-size:22px">—</div>
     <div class="ks" id="k-split-s">Meta / Google</div>
   </div>
 </div>
 
-<!-- CHARTS ROW 1 -->
 <div class="sec"><span class="sec-n">TRENDS & DISTRIBUTIONS</span><div class="sec-r"></div></div>
 <div class="row2">
   <div class="card">
@@ -492,11 +486,12 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
     </div>
     <div class="cw" style="height:220px"><canvas id="trendC" role="img"></canvas></div>
   </div>
+  
   <div class="card">
     <div class="ct">
       <div style="display:flex;align-items:center;gap:12px">
         <span class="ct-n">PERFORMANCE BY BRAND</span>
-        <div class="dim-toggle" style="margin-bottom:0">
+        <div class="dim-toggle">
           <button class="dim-btn on" id="btn-met-roi" onclick="setBrandMetric('roi')">ROI</button>
           <button class="dim-btn" id="btn-met-roas" onclick="setBrandMetric('roas')">ROAS</button>
         </div>
@@ -506,8 +501,8 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
     <div class="roi-list" id="roi-bars"></div>
     <div class="sum-row" id="roi-sum"></div>
   </div>
+</div>
 
-<!-- CHARTS ROW 2 -->
 <div class="row3">
   <div class="card">
     <div class="ct">
@@ -537,10 +532,13 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
   </div>
 </div>
 
-<!-- TABLE -->
 <div class="sec"><span class="sec-n">FULL BREAKDOWN</span><div class="sec-r"></div></div>
 <div class="card" style="padding:0; overflow:hidden;">
-  <div style="padding:24px 24px 0;">
+  <div class="ct" style="padding:24px 24px 0; margin-bottom:16px;">
+    <span class="ct-n">FULL KPI TABLE</span>
+    <span class="ct-b g" id="tbl-badge">7 days</span>
+  </div>
+  <div style="padding:0 24px;">
     <div class="dim-toggle">
       <button class="dim-btn on" onclick="setDim('brand',this)">By Brand</button>
       <button class="dim-btn" onclick="setDim('day',this)">By Day</button>
@@ -562,7 +560,6 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
   <span class="ft-t" id="footer-ts">—</span>
 </footer>
 
-<!-- SETTINGS MODAL -->
 <div id="settings-modal" class="modal">
   <div class="modal-box">
     <div class="modal-header">
@@ -590,7 +587,6 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
   </div>
 </div>
 
-<!-- KPI MODAL -->
 <div id="kpi-modal" class="modal">
   <div class="modal-box">
     <div class="modal-header">
@@ -764,7 +760,7 @@ function setBrandMetric(m){
   if(RAW.meta.length)render();
 }
 
-/* Data Parsing (Anti-Error Protocol Followed) */
+/* Data Parsing */
 async function fetchCsv(url){
   const bustUrl = url + '&_t=' + Date.now();
   try{const r=await fetch(bustUrl,{mode:'cors', cache:'no-store'});if(r.ok)return await r.text();}catch(e){}
