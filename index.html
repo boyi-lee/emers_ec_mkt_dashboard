@@ -10,7 +10,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <style>
-/* 下面維持妳原本的 CSS... */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,600;1,9..40,700&family=DM+Mono:wght@300;400;500;600&display=swap');
 
 /* --- APPLE PREMIUM FLAT THEME --- */
@@ -495,7 +494,7 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
     <div class="ct">
       <div style="display:flex;align-items:center;gap:12px">
         <span class="ct-n">PERFORMANCE BY BRAND</span>
-        <div class="dim-toggle">
+        <div class="dim-toggle" style="margin-bottom:0">
           <button class="dim-btn on" id="btn-met-roi" onclick="setBrandMetric('roi')">ROI</button>
           <button class="dim-btn" id="btn-met-roas" onclick="setBrandMetric('roas')">ROAS</button>
         </div>
@@ -521,8 +520,8 @@ footer{margin-top:40px;padding:32px;border-top:1px solid var(--rule);display:fle
       <span class="ct-b n" id="spend-period-badge">dynamic</span>
     </div>
     <div class="legr">
-      <div class="leg"><div class="leg-sq" style="background-color:var(--accent)"></div>Meta</div>
-      <div class="leg"><div class="leg-sq" style="background-color:var(--accent-m)"></div>Google</div>
+      <div class="leg"><div class="leg-sq" style="background-color:#0f3a5e"></div>Meta</div>
+      <div class="leg"><div class="leg-sq" style="background-color:#3b82f6"></div>Google</div>
     </div>
     <div class="cw" style="height:220px"><canvas id="spendC"></canvas></div>
   </div>
@@ -1174,12 +1173,12 @@ function renderTrend(series){
   charts.trend=new Chart($('trendC'),{
     data:{labels:series.map(s=>s.label),datasets:[
       {type:'bar',label:'Spend (TWD)',data:series.map(s=>Math.round(s.spend)),backgroundColor:'rgba(59,130,246,.15)',borderRadius:2,yAxisID:'y'},
-      {type:'line',label:'ROI',data:series.map(s=>s.roi!==null?Math.round(s.roi*10)/10:null),borderColor:'var(--accent)',backgroundColor:'transparent',borderWidth:2,tension:0.3,pointRadius:3,pointBackgroundColor:'var(--accent)',yAxisID:'y2',spanGaps:true}
+      {type:'line',label:'ROI',data:series.map(s=>s.roi!==null?Math.round(s.roi*10)/10:null),borderColor:'#0f3a5e',backgroundColor:'transparent',borderWidth:2,tension:0.3,pointRadius:3,pointBackgroundColor:'#0f3a5e',yAxisID:'y2',spanGaps:true}
     ]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{if(ctx.datasetIndex===0)return' Spend: $'+ctx.raw.toLocaleString();return' ROI: '+ctx.raw.toFixed(1)+'×';}}}},
       scales:{
         y:{ticks:{color:tc,font:{size:10},callback:v=>'$'+v.toLocaleString()},grid:{color:gc},position:'left'},
-        y2:{ticks:{color:'var(--accent)',font:{size:10,weight:700},callback:v=>v.toFixed(1)+'×'},grid:{display:false},position:'right'}
+        y2:{ticks:{color:'#0f3a5e',font:{size:10,weight:700},callback:v=>v.toFixed(1)+'×'},grid:{display:false},position:'right'}
       }}
   });
 }
@@ -1195,10 +1194,7 @@ function renderStack(brandRows, targetBrands){
 function renderSpend(series){
   dc('spend');
   const labels=series.map(s=>s.label);
-  
-  // 計算每個柱子的總和，用來算百分比
   const totals = series.map(s => s.ms + s.gs);
-
   charts.spend=new Chart($('spendC'),{
     type:'bar',
     data:{
@@ -1207,20 +1203,20 @@ function renderSpend(series){
         {
           label:'Meta',
           data:series.map(s=>Math.round(s.ms)),
-          backgroundColor:'var(--accent)', // 深藍色
+          backgroundColor:'#0f3a5e',
           borderRadius:3,
           stack:'s'
         }, 
         {
           label:'Google',
           data:series.map(s=>Math.round(s.gs)),
-          backgroundColor:'var(--accent-m)', // 亮藍色
+          backgroundColor:'#3b82f6',
           borderRadius:3,
           stack:'s'
         }
       ]
     },
-    plugins: [ChartDataLabels], // 啟用剛剛引入的常駐標籤套件
+    plugins: [ChartDataLabels],
     options:{
       responsive:true,
       maintainAspectRatio:false,
@@ -1231,17 +1227,13 @@ function renderSpend(series){
             label:ctx=>' '+ctx.dataset.label+': $'+ctx.raw.toLocaleString()
           }
         },
-        // 常駐百分比標籤設定
         datalabels: {
-          color: '#ffffff', // 白色字體
+          color: '#ffffff',
           font: { weight: 'bold', size: 10 },
           formatter: (value, context) => {
-            if (value === 0) return ''; 
-            
+            if (value === 0) return '';
             const total = totals[context.dataIndex];
             const percentage = Math.round((value / total) * 100);
-            
-            // 超過 5% 的區塊才顯示字，避免太擠
             if (percentage > 5) {
               return percentage + '%';
             } else {
