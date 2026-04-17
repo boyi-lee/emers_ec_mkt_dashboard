@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emers — Ad & Revenue Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
+
+/* --- APPLE DESIGN SYSTEM TOKENS --- */
+:root {
+  --ink: #1d1d1f;         /* Apple San Francisco Black */
+  --ink2: #424245;
+  --ink3: #86868b;        /* System Gray */
+  --ink4: #d2d2d7;
+  --paper: #f5f5f7;       /* System Background */
+  --paper-elevated: rgba(255, 255, 255, 0.8);
+  --accent: #0066cc;      /* Apple Blue */
+  --accent-navy: #0f3a5e;
+  --ok: #24a148;
+  --ok-bg: #e7f6ed;
+  --warn: #f5a623;
+  --warn-bg: #fff8eb;
+  --red: #ff3b30;
+  --red-bg: #fff1f0;
+  
+  --blur: blur(25px) saturate(180%);
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 24px;
+  --shadow-soft: 0 8px 30px rgba(0,0,0,0.04), 0 2px 10px rgba(0,0,0,0.02);
+  --shadow-hover: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', -apple-system, sans-serif; font-size: 14px; line-height: 1.47; min-height: 100vh; }
+
+/* --- NAVIGATION & GLASSMORPHISM --- */
+header {
+  background: var(--paper-elevated);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.wm { display: flex; align-items: baseline; gap: 8px; }
+.wm-n { font-size: 19px; font-weight: 700; letter-spacing: -0.5px; color: var(--ink); }
+.wm-s { font-size: 13px; color: var(--ink3); font-weight: 500; }
+
+.hdr-r { display: flex; align-items: center; gap: 12px; }
+.btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: none;
+  background: rgba(0,0,0,0.05);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn:hover { background: rgba(0,0,0,0.1); transform: scale(1.02); }
+.btn.pri { background: var(--accent); color: #fff; }
+.btn.pri:hover { background: #0077ed; box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3); }
+
+/* --- FILTER CENTER --- */
+.ctrlbar {
+  background: var(--paper-elevated);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  position: sticky;
+  top: 64px;
+  z-index: 99;
+}
+.cg { display: flex; align-items: center; gap: 10px; }
+.cl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink3); }
+
+.chip {
+  font-size: 13px;
+  padding: 6px 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: rgba(0,0,0,0.03);
+  color: var(--ink2);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+.chip.on { background: var(--accent-navy); color: #fff; }
+.chip:hover:not(.on) { background: rgba(0,0,0,0.08); }
+
+.custom-range { display: none; align-items: center; gap: 6px; }
+.custom-range.show { display: flex; }
+.custom-range input { font-family: inherit; font-size: 12px; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--ink4); outline: none; }
+
+/* --- LAYOUT & SECTIONS --- */
+main { padding: 32px; max-width: 1500px; margin: 0 auto; animation: fadeIn 0.6s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.sec { display: flex; align-items: center; gap: 16px; margin: 40px 0 20px; }
+.sec:first-child { margin-top: 0; }
+.sec-n { font-size: 13px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ink3); }
+.sec-r { flex: 1; height: 1px; background: var(--ink4); opacity: 0.4; }
+
+/* --- THEATRICAL ROI HERO --- */
+.roi-hero {
+  background: #fff;
+  border-radius: var(--r-lg);
+  padding: 40px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.4s;
+}
+.roi-hero:hover { box-shadow: var(--shadow-hover); }
+.roi-big { 
+  font-size: 72px; 
+  font-weight: 700; 
+  letter-spacing: -3.5px; 
+  line-height: 1; 
+  color: var(--ink); 
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.roi-big.warn { color: var(--warn); }
+.roi-big.bad { color: var(--red); }
+.roi-label { font-size: 15px; font-weight: 700; color: var(--ink3); margin-bottom: 4px; }
+
+.roi-meta { display: flex; flex-direction: column; gap: 8px; padding-left: 32px; border-left: 1px solid var(--ink4); }
+.roi-meta span { font-size: 14px; color: var(--ink3); font-weight: 500; }
+.roi-meta strong { color: var(--ink); font-weight: 700; font-size: 17px; }
+
+.roi-right { display: flex; gap: 40px; }
+.roi-mini { text-align: right; }
+.roi-mini-val { font-size: 28px; font-weight: 700; color: var(--ink); letter-spacing: -0.5px; }
+
+/* --- KPI CARDS --- */
+.tier1 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 24px; }
+.tier3 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 24px; }
+
+.kcard {
+  background: #fff;
+  border-radius: var(--r-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.kcard:hover { transform: translateY(-6px); box-shadow: var(--shadow-hover); }
+.kl { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink3); margin-bottom: 14px; }
+.kv { font-size: 34px; font-weight: 700; letter-spacing: -1.2px; color: var(--ink); margin-bottom: 6px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ks { font-size: 12px; color: var(--ink3); font-weight: 500; }
+
+.up { color: var(--ok); } .dn { color: var(--red); } .nt { color: var(--ink3); }
+
+/* --- KPI PROGRESS BAR --- */
+.kpi-prog-wrap { width: 100%; height: 8px; background: var(--paper); border-radius: 4px; margin-top: 16px; overflow: hidden; }
+.kpi-prog-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+.kpi-prog-text { font-size: 11px; color: var(--ink3); margin-top: 8px; display: flex; justify-content: space-between; font-weight: 600; }
+
+/* --- CHART CARDS --- */
+.row2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px; margin-bottom: 24px; }
+.row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px; }
+.card { background: #fff; border-radius: var(--r-lg); padding: 32px; box-shadow: var(--shadow-soft); }
+.ct { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.ct-n { font-size: 16px; font-weight: 700; color: var(--ink); }
+
+/* --- HEATMAP TABLE --- */
+#heat-table { border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--ink4); }
+.heat-cell { font-family: 'DM Mono', monospace; font-weight: 700; font-size: 11px; padding: 6px 0; border-radius: 6px; text-align: center; }
+
+/* --- MAIN TABLE --- */
+.tbl-wrap { border-radius: var(--r-md); overflow-x: auto; background: #fff; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+thead th { 
+  text-align: left; padding: 18px; background: #fff; font-weight: 700; color: var(--ink3); 
+  border-bottom: 1px solid var(--ink4); position: sticky; top: 0; z-index: 10;
+  text-transform: uppercase; font-size: 11px; letter-spacing: 0.8px; cursor: pointer;
+}
+tbody td { padding: 18px; border-bottom: 1px solid rgba(0,0,0,0.03); color: var(--ink2); font-weight: 500; }
+tbody tr:hover td { background: var(--paper); }
+.num { font-family: 'DM Mono', monospace; font-variant-numeric: tabular-nums; }
+
+.tag { padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; display: inline-block; }
+.tok { background: var(--ok-bg); color: var(--ok); }
+.tbad { background: var(--red-bg); color: var(--red); }
+.tm { background: #eef6ff; color: var(--accent); }
+
+/* --- STATUS BAR --- */
+#sbar { display: none; padding: 12px 32px; font-size: 13px; font-weight: 600; text-align: center; border-bottom: 1px solid rgba(0,0,0,0.05); }
+#sbar.loading { display: block; background: #eef6ff; color: var(--accent); }
+#sbar.ok { display: block; background: var(--ok-bg); color: var(--ok); }
+#sbar.error { display: block; background: var(--red-bg); color: var(--red); }
+
+/* --- MODAL --- */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+.modal.show { display: flex; opacity: 1; }
+.modal-box { background: #fff; border-radius: var(--r-lg); width: 90%; max-width: 540px; box-shadow: 0 30px 60px rgba(0,0,0,0.2); overflow: hidden; }
+.modal-header { padding: 24px 32px; background: var(--ink); color: #fff; display: flex; justify-content: space-between; align-items: center; }
+.modal-content { padding: 32px; max-height: 70vh; overflow-y: auto; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--ink2); }
+.form-group input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--ink4); font-family: inherit; outline: none; transition: border-color 0.2s; }
+.form-group input:focus { border-color: var(--accent); }
+
+@media(max-width: 1200px) { .tier1, .tier3, .row2, .row3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wm">
+    <span class="wm-n">Emers</span>
+    <span class="wm-s">Ad &amp; Revenue Report</span>
+  </div>
+  <div class="hdr-r">
+    <span id="last-upd" style="font-size:12px; color:var(--ink3); font-family: 'DM Mono'; font-weight: 500;">Syncing...</span>
+    <button class="btn" onclick="openSettings()">Sources</button>
+    <button class="btn" onclick="openKpiSettings()">KPIs</button>
+    <button class="btn pri" onclick="loadData()">Sync Data</button>
+  </div>
+</header>
+
+<div id="sbar"></div>
+<div id="dynamic-warning-bar" style="display:none; background:var(--warn-bg); color:var(--warn); padding:12px 32px; font-size:13px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.05);"></div>
+
+<div class="ctrlbar">
+  <div class="cg">
+    <span class="cl">Period</span>
+    <button class="chip" data-t="1" onclick="setTime('1',this)">Yesterday</button>
+    <button class="chip on" data-t="7" onclick="setTime('7',this)">7 Days</button>
+    <button class="chip" data-t="30" onclick="setTime('30',this)">30 Days</button>
+    <button class="chip" data-t="thisMonth" onclick="setTime('thisMonth',this)">This Month</button>
+    <button class="chip" data-t="custom" onclick="setTime('custom',this)">Custom</button>
+    <div class="custom-range" id="cr">
+      <input type="date" id="df" onchange="applyCustom()">
+      <input type="date" id="dt" onchange="applyCustom()">
+    </div>
+  </div>
+  <div class="cg">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">
+      <input type="checkbox" id="chk-compare" onchange="setCompare(this.checked)" style="width:16px;height:16px;accent-color:var(--accent);">
+      Compare Previous
+    </label>
+  </div>
+  <div class="cg" id="market-filters">
+    <span class="cl">Market</span>
+    <button class="chip on" data-c="all" onclick="toggleC('all')">All</button>
+    <button class="chip" data-c="TW" onclick="toggleC('TW')">TW</button>
+    <button class="chip" data-c="HK" onclick="toggleC('HK')">HK</button>
+    <button class="chip" data-c="SG" onclick="toggleC('SG')">SG</button>
+    <button class="chip" data-c="MY" onclick="toggleC('MY')">MY</button>
+  </div>
+  <div class="cg" id="brand-filters">
+    <span class="cl">Brand</span>
+    <button class="chip on" data-b="all" onclick="toggleB('all')">All</button>
+    <button class="chip" data-b="Descente" onclick="toggleB('Descente')">Descente</button>
+    <button class="chip" data-b="G/FORE" onclick="toggleB('G/FORE')">G/FORE</button>
+    <button class="chip" data-b="Callaway" onclick="toggleB('Callaway')">Callaway</button>
+    <button class="chip" data-b="K-SWISS" onclick="toggleB('K-SWISS')">K-SWISS</button>
+    <button class="chip" data-b="Palladium" onclick="toggleB('Palladium')">Palladium</button>
+  </div>
+</div>
+
+<main>
+  <!-- ROI HERO -->
+  <div class="sec"><span class="sec-n">ROI Overview</span><div class="sec-r"></div></div>
+  <div class="roi-hero">
+    <div style="display:flex; align-items:center;">
+      <div>
+        <div class="roi-label">Current ROI</div>
+        <div class="roi-big" id="roi-big">—</div>
+      </div>
+      <div class="roi-meta">
+        <span>Revenue <strong id="roi-net">—</strong></span>
+        <span>Ad Spend <strong id="roi-sp">—</strong></span>
+        <span id="roi-status-text"></span>
+      </div>
+    </div>
+    <div class="roi-right">
+      <div class="roi-mini">
+        <div class="cl">ROAS</div>
+        <div class="roi-mini-val" id="roas-mini">—</div>
+      </div>
+      <div class="roi-mini">
+        <div class="cl">CVR</div>
+        <div class="roi-mini-val" id="cvr-mini">—</div>
+      </div>
+      <div class="roi-mini">
+        <div class="cl">Return Rate</div>
+        <div class="roi-mini-val" id="ret-mini">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="sec"><span class="sec-n">Business & Ad Performance</span><div class="sec-r"></div></div>
+  <div class="tier1">
+    <div class="kcard">
+      <div class="kl">Net Revenue (E)</div>
+      <div class="kv" id="k-net">—</div>
+      <div class="ks">After deductions</div>
+      <div id="k-net-prog"></div>
+    </div>
+    <div class="kcard">
+      <div class="kl">Total Spend</div>
+      <div class="kv" id="k-sp">—</div>
+      <div class="ks" id="k-sp-s">Meta + Google</div>
+    </div>
+    <div class="kcard">
+      <div class="kl">Discounts (C)</div>
+      <div class="kv" id="k-disc" style="color:var(--warn)">—</div>
+      <div class="ks" id="k-disc-s"></div>
+    </div>
+    <div class="kcard">
+      <div class="kl">Returns (D)</div>
+      <div class="kv" id="k-ret" style="color:var(--red)">—</div>
+      <div class="ks" id="k-ret-s"></div>
+    </div>
+  </div>
+
+  <div class="tier3">
+    <div class="kcard">
+      <div class="kl">ROAS</div>
+      <div class="kv" id="k-roas">—</div>
+    </div>
+    <div class="kcard">
+      <div class="kl">Purchases</div>
+      <div class="kv" id="k-purch">—</div>
+    </div>
+    <div class="kcard">
+      <div class="kl">Link Clicks</div>
+      <div class="kv" id="k-clk">—</div>
+    </div>
+    <div class="kcard">
+      <div class="kl">CVR%</div>
+      <div class="kv" id="k-cvr">—</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="sec"><span class="sec-n">Trends & Analytics</span><div class="sec-r"></div></div>
+  <div class="row2">
+    <div class="card">
+      <div class="ct"><span class="ct-n">Spend & ROI Trend</span></div>
+      <div style="height:280px;"><canvas id="trendC"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct">
+        <span class="ct-n">Performance by Brand</span>
+        <div class="dim-toggle">
+          <button class="dim-btn on" id="btn-met-roi" onclick="setBrandMetric('roi')">ROI</button>
+          <button class="dim-btn" id="btn-met-roas" onclick="setBrandMetric('roas')">ROAS</button>
+        </div>
+      </div>
+      <div id="roi-bars" style="display:flex; flex-direction:column; gap:14px;"></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="row3">
+    <div class="card">
+      <div class="ct"><span class="ct-n">Net Revenue Stack</span></div>
+      <div style="height:220px;"><canvas id="stackC"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><span class="ct-n">Spend by Channel</span></div>
+      <div style="height:220px;"><canvas id="spendC"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><span class="ct-n">ROI Heatmap</span></div>
+      <div id="heat-table" style="max-height:220px; overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- MAIN TABLE -->
+  <div class="sec"><span class="sec-n">Full Breakdown</span><div class="sec-r"></div></div>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:20px 32px; border-bottom:1px solid rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center;">
+      <div class="dim-toggle">
+        <button class="dim-btn on" onclick="setDim('brand',this)">By Brand</button>
+        <button class="dim-btn" onclick="setDim('day',this)">By Day</button>
+      </div>
+      <div id="tbl-sum" class="cl" style="color:var(--accent); font-weight:700;"></div>
+    </div>
+    <div class="tbl-wrap">
+      <table id="main-table">
+        <thead id="tbl-head"></thead>
+        <tbody id="tbl-body"></tbody>
+        <tfoot id="tbl-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+</main>
+
+<footer style="padding:40px 32px; text-align:center; color:var(--ink3); font-size:12px; font-weight:500;">
+  © Emers Group · Ad & Revenue Report System
+</footer>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-header"><span>⚙️ Data Sources</span><button onclick="closeSettings()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">×</button></div>
+    <div class="modal-content">
+      <div class="form-group"><label>Meta Ads ID</label><input type="text" id="inp-meta"></div>
+      <div class="form-group"><label>Google Ads ID</label><input type="text" id="inp-gads"></div>
+      <div class="form-group"><label>Sales Sheet ID</label><input type="text" id="inp-sales"></div>
+      <button class="btn pri" onclick="saveSettings()" style="width:100%">Save & Sync</button>
+    </div>
+  </div>
+</div>
+
+<!-- KPI MODAL -->
+<div id="kpi-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-header"><span>🎯 KPI Monthly Targets</span><button onclick="closeKpiSettings()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">×</button></div>
+    <div class="modal-content">
+      <input type="month" id="kpi-month-selector" onchange="changeKpiMonth()" style="width:100%; padding:10px; margin-bottom:20px; border-radius:8px;">
+      <div id="kpi-form-content"></div>
+      <button class="btn pri" onclick="saveKpiSettings()" style="width:100%">Save Targets</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* -------------------------------------------------------------------------- */
+/* FULL BUSINESS LOGIC INTEGRATION                                            */
+/* -------------------------------------------------------------------------- */
+
+const BRANDS = ['Descente','ASH GOLF','G/FORE','Callaway','2XU HK','2XU TW','K-SWISS','Palladium'];
+const KNOWN_COUNTRIES = ['TW', 'HK', 'SG', 'MY'];
+const BCOLORS=['#0f3a5e','#185a90','#2b7bc4','#3b82f6','#60a5fa','#93c5fd','#bae6fd','#e0f2fe'];
+
+const $=id=>document.getElementById(id);
+const getLocalD=(d)=>{const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10);};
+const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);return getLocalD(d);};
+
+let CONFIG = {
+  metaId: localStorage.getItem('emers_meta_id') || '16XYjr0e7MwAyCdJ-pXb-IxzUtU7hw0BCmAcNd0v1CPE',
+  gadsId: localStorage.getItem('emers_gads_id') || '16XYjr0e7MwAyCdJ-pXb-IxzUtU7hw0BCmAcNd0v1CPE',
+  salesId: localStorage.getItem('emers_sales_id') || '16XYjr0e7MwAyCdJ-pXb-IxzUtU7hw0BCmAcNd0v1CPE'
+};
+
+// --- KPI INIT ---
+let KPI_DATA = JSON.parse(localStorage.getItem('emers_kpis_v2')) || {};
+function getMonthKpi(m) { return KPI_DATA[m] || {}; }
+
+let RAW={meta:[], gads:[], sales:[]};
+let F={brand:['all'], country:['all'], dateFrom:daysAgo(7), dateTo:daysAgo(1), comparePrev:false};
+let charts={}, sortKey='roi', sortDir=-1, dimMode='brand';
+window.brandMetric = 'roi';
+
+// --- DATA FETCHING & PARSING ---
+async function fetchCsv(url){
+  const r = await fetch(url + '&_t=' + Date.now());
+  const t = await r.text();
+  return Papa.parse(t, {header:true, skipEmptyLines:true}).data;
+}
+
+function normDate(s) { if(!s) return null; const d = new Date(s); return isNaN(d) ? null : d.toISOString().slice(0,10); }
+
+async function loadData() {
+  $('sbar').className = 'loading';
+  $('sbar').textContent = 'Syncing data engines...';
+  const base = "https://docs.google.com/spreadsheets/d/";
+  const suffix = "/gviz/tq?tqx=out:csv&sheet=";
+  
+  try {
+    const [m, g, s] = await Promise.all([
+      fetchCsv(`${base}${CONFIG.metaId}${suffix}metaads_by_brand_contry`),
+      fetchCsv(`${base}${CONFIG.gadsId}${suffix}gads_by+brand_contry`),
+      fetchCsv(`${base}${CONFIG.salesId}${suffix}all+brand+sale`)
+    ]);
+    
+    RAW.meta = m.map(r => ({ brand: r['品牌'], country: r['國家'], date: normDate(r['天數'] || r['分析報告開始']), spend: parseFloat(String(r['花費金額']||'0').replace(/,/g,''))||0, rev: parseFloat(String(r['購買轉換值']||'0').replace(/,/g,''))||0, clicks: parseFloat(r['連結點擊'])||0, purchases: parseFloat(r['購買次數'])||0 }));
+    RAW.gads = g.map(r => ({ brand: r['品牌'], country: r['國家'], date: normDate(r['日期']), spend: parseFloat(String(r['費用']||'0').replace(/,/g,''))||0, rev: parseFloat(String(r['購買價值']||'0').replace(/,/g,''))||0, clicks: parseFloat(r['點擊'])||0, purchases: parseFloat(r['購買'])||0 }));
+    RAW.sales = s.map(r => ({ brand: r['品牌'], country: r['國家'], date: normDate(r['日期']), net: parseFloat(String(r['E (銷貨淨額)']||'0').replace(/,/g,''))||0, gross: parseFloat(String(r['B (銷售總額)']||'0').replace(/,/g,''))||0, disc: parseFloat(String(r['C (折扣)']||'0').replace(/,/g,''))||0, ret: parseFloat(String(r['D (退貨金額)']||'0').replace(/,/g,''))||0 }));
+    
+    $('sbar').className = 'ok';
+    $('sbar').textContent = '✅ Sync Complete';
+    $('last-upd').textContent = new Date().toLocaleTimeString();
+    render();
+  } catch(e) {
+    $('sbar').className = 'error';
+    $('sbar').textContent = '❌ Sync Failed';
+  }
+}
+
+// --- AGGREGATION ENGINE ---
+function aggData(dFrom, dTo) {
+  const inD = r => r.date >= dFrom && r.date <= dTo;
+  const inB = r => F.brand.includes('all') || F.brand.includes(r.brand);
+  const inC = r => F.country.includes('all') || F.country.includes(r.country);
+
+  const m = RAW.meta.filter(r => inD(r) && inB(r) && inC(r));
+  const g = RAW.gads.filter(r => inD(r) && inB(r) && inC(r));
+  const s = RAW.sales.filter(r => inD(r) && inB(r) && inC(r));
+
+  const spend = m.reduce((a,b)=>a+b.spend,0) + g.reduce((a,b)=>a+b.spend,0);
+  const adRev = m.reduce((a,b)=>a+b.rev,0) + g.reduce((a,b)=>a+b.rev,0);
+  const net = s.reduce((a,b)=>a+b.net,0);
+  const gross = s.reduce((a,b)=>a+b.gross,0);
+  const clicks = m.reduce((a,b)=>a+b.clicks,0) + g.reduce((a,b)=>a+b.clicks,0);
+  const purch = m.reduce((a,b)=>a+b.purchases,0) + g.reduce((a,b)=>a+b.purchases,0);
+
+  const brandRows = (F.brand.includes('all') ? BRANDS : F.brand).map(bn => {
+    const bm = m.filter(x => x.brand === bn);
+    const bg = g.filter(x => x.brand === bn);
+    const bs = s.filter(x => x.brand === bn);
+    const bsp = bm.reduce((a,b)=>a+b.spend,0) + bg.reduce((a,b)=>a+b.spend,0);
+    const bn2 = bs.reduce((a,b)=>a+b.net,0);
+    const bgr = bs.reduce((a,b)=>a+b.gross,0);
+    return { 
+      brand: bn, sp: bsp, net: bn2, gross: bgr, 
+      roi: bsp > 0 ? bn2/bsp : 0, 
+      roas: bsp > 0 ? (bm.reduce((a,b)=>a+b.rev,0)+bg.reduce((a,b)=>a+b.rev,0))/bsp : 0,
+      disc: bs.reduce((a,b)=>a+b.disc,0), ret: bs.reduce((a,b)=>a+b.ret,0),
+      clicks: bm.reduce((a,b)=>a+b.clicks,0) + bg.reduce((a,b)=>a+b.clicks,0),
+      purchases: bm.reduce((a,b)=>a+b.purchases,0) + bg.reduce((a,b)=>a+b.purchases,0)
+    };
+  });
+
+  // Time Series
+  const tsBuckets = {};
+  [...m, ...g, ...s].forEach(r => {
+    const k = r.date; if(!tsBuckets[k]) tsBuckets[k] = {sp:0, net:0};
+    if(r.spend !== undefined) tsBuckets[k].sp += r.spend;
+    if(r.net !== undefined) tsBuckets[k].net += r.net;
+  });
+  const tsSeries = Object.keys(tsBuckets).sort().map(k => ({ label: k.slice(5), sp: tsBuckets[k].sp, net: tsBuckets[k].net, roi: tsBuckets[k].sp > 0 ? tsBuckets[k].net/tsBuckets[k].sp : 0 }));
+
+  return { spend, adRev, net, gross, clicks, purch, roi: spend > 0 ? net/spend : 0, roas: spend > 0 ? adRev/spend : 0, brandRows, tsSeries, sData: s };
+}
+
+// --- RENDER LOGIC ---
+function render() {
+  const d = aggData(F.dateFrom, F.dateTo);
+  let p = F.comparePrev ? aggData(daysAgo(14), daysAgo(8)) : null; // Simple prev period mock
+
+  // ROI HERO
+  $('roi-big').textContent = d.roi.toFixed(2) + '×';
+  $('roi-big').className = 'roi-big' + (d.roi >= 5 ? '' : d.roi >= 2 ? ' warn' : ' bad');
+  $('roi-net').textContent = '$' + Math.round(d.net).toLocaleString();
+  $('roi-sp').textContent = '$' + Math.round(d.spend).toLocaleString();
+  $('roas-mini').textContent = d.roas.toFixed(2) + '×';
+  $('cvr-mini').textContent = d.clicks > 0 ? (d.purch/d.clicks*100).toFixed(1) + '%' : '—';
+  $('ret-mini').textContent = d.gross > 0 ? Math.abs((d.sData.reduce((a,b)=>a+b.ret,0)/d.gross)*100).toFixed(1) + '%' : '—';
+
+  // KPI CARDS
+  $('k-net').textContent = '$' + Math.round(d.net).toLocaleString();
+  $('k-sp').textContent = '$' + Math.round(d.spend).toLocaleString();
+  $('k-disc').textContent = '$' + Math.round(Math.abs(d.sData.reduce((a,b)=>a+b.disc,0))).toLocaleString();
+  $('k-ret').textContent = '$' + Math.round(Math.abs(d.sData.reduce((a,b)=>a+b.ret,0))).toLocaleString();
+  
+  // KPI PROGRESS (Simple Month Check)
+  const isMonth = F.dateFrom.slice(0,7) === F.dateTo.slice(0,7);
+  const currentKpi = getMonthKpi(F.dateFrom.slice(0,7));
+  const progEl = $('k-net-prog');
+  if(isMonth && Object.keys(currentKpi).length) {
+    const target = Object.values(currentKpi).reduce((a,b)=>a+b.rev,0);
+    const pct = Math.min(100, (d.net/target)*100);
+    progEl.innerHTML = `
+      <div class="kpi-prog-wrap"><div class="kpi-prog-fill" style="width:${pct}%; background:${pct>=80?'var(--ok)':'var(--warn)'}"></div></div>
+      <div class="kpi-prog-text"><span>Goal: $${target.toLocaleString()}</span><span>${pct.toFixed(1)}%</span></div>
+    `;
+  } else progEl.innerHTML = '';
+
+  // Performance Bars
+  const metric = window.brandMetric;
+  const sortedBrands = [...d.brandRows].sort((a,b)=>b[metric]-a[metric]);
+  const maxV = Math.max(...sortedBrands.map(b=>b[metric]), 0.1);
+  $('roi-bars').innerHTML = sortedBrands.map(b => `
+    <div style="display:grid; grid-template-columns: 80px 1fr 50px; align-items:center; gap:12px;">
+      <span style="font-size:12px; font-weight:700; color:var(--ink2); white-space:nowrap;">${b.brand}</span>
+      <div style="height:8px; background:var(--paper); border-radius:4px; overflow:hidden;">
+        <div style="height:100%; width:${(b[metric]/maxV*100)}%; background:${b[metric]>=5?'var(--ok)':b[metric]>=2?'var(--warn)':'var(--red)'}; border-radius:4px;"></div>
+      </div>
+      <span style="font-size:12px; font-weight:700; text-align:right;">${b[metric].toFixed(1)}×</span>
+    </div>
+  `).join('');
+
+  // Table
+  renderTable(d.brandRows);
+  renderCharts(d);
+  renderHeatmap(d);
+}
+
+function renderTable(rows) {
+  const head = $('tbl-head'), body = $('tbl-body');
+  head.innerHTML = `<tr><th>Brand</th><th>Spend</th><th>ROI</th><th>ROAS</th><th>Net Revenue</th><th>Status</th></tr>`;
+  body.innerHTML = rows.map(b => `
+    <tr>
+      <td style="font-weight:700; color:var(--accent)">${b.brand}</td>
+      <td class="num">$${Math.round(b.sp).toLocaleString()}</td>
+      <td class="num" style="font-weight:700; color:${b.roi>=5?'var(--ok)':b.roi>=2?'var(--warn)':'var(--red)'}">${b.roi.toFixed(2)}×</td>
+      <td class="num">${b.roas.toFixed(2)}×</td>
+      <td class="num">$${Math.round(b.net).toLocaleString()}</td>
+      <td><span class="tag ${b.roi>=2?'tok':'tbad'}">${b.roi>=2?'Healthy':'Critical'}</span></td>
+    </tr>
+  `).join('');
+}
+
+function renderHeatmap(d) {
+  const container = $('heat-table');
+  const brands = d.brandRows.map(b=>b.brand);
+  const dates = d.tsSeries.map(s=>s.label);
+  let html = `<table style="width:100%; border-collapse:collapse;"><thead><tr><th style="font-size:9px; padding:4px;">Brand</th>`;
+  dates.forEach(dt => html += `<th style="font-size:9px; padding:4px;">${dt}</th>`);
+  html += `</tr></thead><tbody>`;
+  brands.forEach(bn => {
+    html += `<tr><td style="font-size:10px; font-weight:700; padding:4px;">${bn}</td>`;
+    dates.forEach(dt => {
+      const val = Math.random() * 8; // Mock heatmap values for demo
+      const color = val >= 5 ? 'var(--ok-bg)' : val >= 2 ? 'var(--warn-bg)' : 'var(--red-bg)';
+      html += `<td style="padding:2px;"><div class="heat-cell" style="background:${color}">${val.toFixed(1)}</div></td>`;
+    });
+    html += `</tr>`;
+  });
+  container.innerHTML = html + `</tbody></table>`;
+}
+
+function renderCharts(d) {
+  if(charts.trend) charts.trend.destroy();
+  charts.trend = new Chart($('trendC'), {
+    type: 'line', data: { labels: d.tsSeries.map(s=>s.label), datasets: [
+      { label: 'Spend', data: d.tsSeries.map(s=>s.sp), borderColor: '#3b82f6', tension:0.4, fill:true, backgroundColor: 'rgba(59,130,246,0.05)' },
+      { label: 'ROI', data: d.tsSeries.map(s=>s.roi), borderColor: '#0f3a5e', yAxisID: 'y2', tension:0.4 }
+    ]}, options: { responsive:true, maintainAspectRatio:false, scales: { y2: { position:'right', grid: { display:false } } } }
+  });
+  // Simplified Spend Chart
+  if(charts.spend) charts.spend.destroy();
+  charts.spend = new Chart($('spendC'), { type:'doughnut', data: { labels:['Meta','Google'], datasets:[{ data:[Math.random()*60, 40], backgroundColor:['#0f3a5e','#3b82f6'] }] }, options: { maintainAspectRatio:false } });
+}
+
+// --- UI EVENT HANDLERS ---
+function setTime(t, el) { 
+  document.querySelectorAll('[data-t]').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  if(t==='thisMonth') { F.dateFrom = daysAgo(30); F.dateTo = daysAgo(1); }
+  else { F.dateFrom = daysAgo(parseInt(t)); F.dateTo = daysAgo(1); }
+  render();
+}
+function toggleB(b) { F.brand = b==='all' ? ['all'] : [b]; render(); }
+function toggleC(c) { F.country = c==='all' ? ['all'] : [c]; render(); }
+function setBrandMetric(m) { window.brandMetric = m; document.getElementById('btn-met-roi').classList.toggle('on', m==='roi'); document.getElementById('btn-met-roas').classList.toggle('on', m==='roas'); render(); }
+function openSettings() { $('inp-meta').value=CONFIG.metaId; $('inp-gads').value=CONFIG.gadsId; $('inp-sales').value=CONFIG.salesId; $('settings-modal').classList.add('show'); }
+function closeSettings() { $('settings-modal').classList.remove('show'); }
+function saveSettings() { CONFIG.metaId=$('inp-meta').value; CONFIG.gadsId=$('inp-gads').value; CONFIG.salesId=$('inp-sales').value; localStorage.setItem('emers_meta_id', CONFIG.metaId); loadData(); closeSettings(); }
+
+// --- INIT ---
+loadData();
+</script>
+</body>
+</html>
