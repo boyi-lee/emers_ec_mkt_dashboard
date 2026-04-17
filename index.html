@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Emers — Ad & Revenue Dashboard</title>
@@ -1191,9 +1193,69 @@ function renderStack(brandRows, targetBrands){
 function renderSpend(series){
   dc('spend');
   const labels=series.map(s=>s.label);
-  charts.spend=new Chart($('spendC'),{type:'bar',data:{labels,datasets:[{label:'Meta',data:series.map(s=>Math.round(s.ms)),backgroundColor:'var(--accent)',borderRadius:3,stack:'s'}, {label:'Google',data:series.map(s=>Math.round(s.gs)),backgroundColor:'var(--accent-m)',borderRadius:3,stack:'s'}]},
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': $'+ctx.raw.toLocaleString()}}},
-    scales:{x:{stacked:true,ticks:{color:tc,font:{size:10}},grid:{display:false}},y:{stacked:true,ticks:{color:tc,font:{size:10},callback:v=>'$'+v.toLocaleString()},grid:{color:gc}}}}});
+  
+  // 計算每個柱子的總和，用來算百分比
+  const totals = series.map(s => s.ms + s.gs);
+
+  charts.spend=new Chart($('spendC'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Meta',
+          data:series.map(s=>Math.round(s.ms)),
+          backgroundColor:'var(--accent)', // 深藍色
+          borderRadius:3,
+          stack:'s'
+        }, 
+        {
+          label:'Google',
+          data:series.map(s=>Math.round(s.gs)),
+          backgroundColor:'var(--accent-m)', // 亮藍色
+          borderRadius:3,
+          stack:'s'
+        }
+      ]
+    },
+    plugins: [ChartDataLabels], // 啟用剛剛引入的常駐標籤套件
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:ctx=>' '+ctx.dataset.label+': $'+ctx.raw.toLocaleString()
+          }
+        },
+        // 常駐百分比標籤設定
+        datalabels: {
+          color: '#ffffff', // 白色字體
+          font: { weight: 'bold', size: 10 },
+          formatter: (value, context) => {
+            if (value === 0) return ''; 
+            
+            const total = totals[context.dataIndex];
+            const percentage = Math.round((value / total) * 100);
+            
+            // 超過 5% 的區塊才顯示字，避免太擠
+            if (percentage > 5) {
+              return percentage + '%';
+            } else {
+              return '';
+            }
+          },
+          anchor: 'center',
+          align: 'center'
+        }
+      },
+      scales:{
+        x:{ stacked:true, ticks:{color:tc,font:{size:10}}, grid:{display:false} },
+        y:{ stacked:true, ticks:{color:tc,font:{size:10},callback:v=>'$'+v.toLocaleString()}, grid:{color:gc} }
+      }
+    }
+  });
 }
 
 function renderHeat(hd, tsKeys, dayCount){
